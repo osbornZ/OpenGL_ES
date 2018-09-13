@@ -15,6 +15,9 @@
 		44C8BED5214A5E5200E3E7BF /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 44C8BED4214A5E5200E3E7BF /* main.m */; };
 		44C8BEDF214A5E5200E3E7BF /* openGL_ES_1Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 44C8BEDE214A5E5200E3E7BF /* openGL_ES_1Tests.m */; };
 		44C8BEEB214A648100E3E7BF /* GLView.m in Sources */ = {isa = PBXBuildFile; fileRef = 44C8BEEA214A648100E3E7BF /* GLView.m */; };
+		44C8BEEF214A6F8700E3E7BF /* GLProgramUtil.m in Sources */ = {isa = PBXBuildFile; fileRef = 44C8BEEE214A6F8700E3E7BF /* GLProgramUtil.m */; };
+		44C8BEF2214A703700E3E7BF /* vert.glsl in Resources */ = {isa = PBXBuildFile; fileRef = 44C8BEF0214A703600E3E7BF /* vert.glsl */; };
+		44C8BEF3214A703700E3E7BF /* frag.glsl in Resources */ = {isa = PBXBuildFile; fileRef = 44C8BEF1214A703600E3E7BF /* frag.glsl */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -43,6 +46,10 @@
 		44C8BEE0214A5E5200E3E7BF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		44C8BEE9214A648100E3E7BF /* GLView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GLView.h; sourceTree = "<group>"; };
 		44C8BEEA214A648100E3E7BF /* GLView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GLView.m; sourceTree = "<group>"; };
+		44C8BEED214A6F8700E3E7BF /* GLProgramUtil.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GLProgramUtil.h; sourceTree = "<group>"; };
+		44C8BEEE214A6F8700E3E7BF /* GLProgramUtil.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GLProgramUtil.m; sourceTree = "<group>"; };
+		44C8BEF0214A703600E3E7BF /* vert.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = vert.glsl; sourceTree = "<group>"; };
+		44C8BEF1214A703600E3E7BF /* frag.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = frag.glsl; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -90,6 +97,7 @@
 				44C8BEEA214A648100E3E7BF /* GLView.m */,
 				44C8BEC8214A5E5100E3E7BF /* ViewController.h */,
 				44C8BEC9214A5E5100E3E7BF /* ViewController.m */,
+				44C8BEEC214A6F6000E3E7BF /* GLManager */,
 				44C8BECB214A5E5100E3E7BF /* Main.storyboard */,
 				44C8BECE214A5E5200E3E7BF /* Assets.xcassets */,
 				44C8BED0214A5E5200E3E7BF /* LaunchScreen.storyboard */,
@@ -106,6 +114,17 @@
 				44C8BEE0214A5E5200E3E7BF /* Info.plist */,
 			);
 			path = openGL_ES_1Tests;
+			sourceTree = "<group>";
+		};
+		44C8BEEC214A6F6000E3E7BF /* GLManager */ = {
+			isa = PBXGroup;
+			children = (
+				44C8BEF1214A703600E3E7BF /* frag.glsl */,
+				44C8BEF0214A703600E3E7BF /* vert.glsl */,
+				44C8BEED214A6F8700E3E7BF /* GLProgramUtil.h */,
+				44C8BEEE214A6F8700E3E7BF /* GLProgramUtil.m */,
+			);
+			path = GLManager;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -190,6 +209,8 @@
 			files = (
 				44C8BED2214A5E5200E3E7BF /* LaunchScreen.storyboard in Resources */,
 				44C8BECF214A5E5200E3E7BF /* Assets.xcassets in Resources */,
+				44C8BEF2214A703700E3E7BF /* vert.glsl in Resources */,
+				44C8BEF3214A703700E3E7BF /* frag.glsl in Resources */,
 				44C8BECD214A5E5100E3E7BF /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -210,6 +231,7 @@
 			files = (
 				44C8BECA214A5E5100E3E7BF /* ViewController.m in Sources */,
 				44C8BEEB214A648100E3E7BF /* GLView.m in Sources */,
+				44C8BEEF214A6F8700E3E7BF /* GLProgramUtil.m in Sources */,
 				44C8BED5214A5E5200E3E7BF /* main.m in Sources */,
 				44C8BEC7214A5E5100E3E7BF /* AppDelegate.m in Sources */,
 			);

@@ -9,6 +9,8 @@
 #import "GLView.h"
 #import <OpenGLES/ES2/gl.h>
 
+#import "GLProgramUtil.h"
+
 @interface GLView()
 {
     CAEAGLLayer *_eaglLayer;
@@ -16,6 +18,8 @@
     
     GLuint       _framebuffer;
     GLuint       _renderbuffer;
+    
+    GLuint      _program;  //渲染program句柄
 }
 
 @end
@@ -31,6 +35,7 @@
     self = [super initWithFrame:frame];
     if (self) {
         [self configEnvironment];
+        [self setUpGLProgram];
     }
     return self;
 }
@@ -85,6 +90,59 @@
 - (void)render {
     
 //清屏
+//    [self justClearScreenToRender];
+    
+//绘制图形
+    [self renderSomeRect];
+}
+
+
+- (void)setUpGLProgram {
+    NSString *vertFile = [[NSBundle mainBundle] pathForResource:@"vert.glsl" ofType:nil];
+    NSString *fragFile = [[NSBundle mainBundle] pathForResource:@"frag.glsl" ofType:nil];
+    _program = [GLProgramUtil createProgramVerFile:vertFile fraFile:fragFile];
+    
+    glUseProgram(_program);
+}
+
+
+//绘制图形单元配置图形数据信息
+- (void)setupVertexData {
+
+//    三角形
+//    static GLfloat vertices[] = {
+//        -1.0f,  1.0f, 0.0f,
+//        -1.0f, -1.0f, 0.0f,
+//        1.0f, -1.0f, 0.0f,
+//    };
+    
+    static GLfloat vertices[] = {
+        0.5f,   -0.5f, 0.0f,
+        0.5f,    0.5f, 0.0f,
+        -0.5f,   0.5f, 0.0f,
+        -0.5f,  -0.5f, 0.0f,
+    };
+    
+    GLint posSlot = glGetAttribLocation(_program, "position");
+    glVertexAttribPointer(posSlot, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+    glEnableVertexAttribArray(posSlot);
+    
+    static GLfloat colors[] = {
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 0.0f
+    };
+    GLint colorSlot = glGetAttribLocation(_program, "color");
+    glVertexAttribPointer(colorSlot, 3, GL_FLOAT, GL_FALSE, 0, colors);
+    glEnableVertexAttribArray(colorSlot);
+    
+}
+
+
+#pragma mark -- render Methods
+
+- (void)justClearScreenToRender {
     glClearColor(0.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
     
@@ -94,7 +152,25 @@
 }
 
 
+- (void)renderSomeRect {
+    glClearColor(0.0, 1.0, 1.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glViewport(0, 0, self.frame.size.width, self.frame.size.height);
 
+    [self setupVertexData];
+    
+    //不同的绘制方式,三角形
+    //GL_TRIANGLES      独立三角形
+    //GL_TRIANGLE_STRIP 交错绘制
+    //GL_TRIANGLE_FAN   扇形绘制
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    
+    //将指定 renderbuffer 呈现在屏幕上，在这里我们指定的是前面已经绑定为当前 renderbuffer 的那个，
+    //在renderbuffer可以被呈现之前,必须调用renderbufferStorage:fromDrawable: 为之分配当前Layer为存储空间
+    
+    [_context presentRenderbuffer:GL_RENDERBUFFER];
+
+}
 
 
 
