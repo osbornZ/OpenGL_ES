@@ -11,6 +11,25 @@
 
 #import "GLProgramUtil.h"
 
+typedef struct {
+    float Position[3];
+    float Color[3];
+} Vertex;
+
+const GLubyte Indices[] = {
+    0, 1, 2,
+    2, 3, 0
+};
+
+//顶点+颜色
+const Vertex vertices[] = {
+    {{0.5f,   -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f,    0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+    {{-0.5f,   0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f,  -0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}}
+};
+
+
 @interface GLView()
 {
     CAEAGLLayer *_eaglLayer;
@@ -20,6 +39,11 @@
     GLuint       _renderbuffer;
     
     GLuint      _program;  //渲染program句柄
+    
+    GLuint      _vboID;
+    GLuint _positionSlot;
+    GLuint _colorSlot;
+    
 }
 
 @end
@@ -36,6 +60,7 @@
     if (self) {
         [self configEnvironment];
         [self setUpGLProgram];
+        [self setUpVertexBuffer];
     }
     return self;
 }
@@ -66,6 +91,7 @@
     }
 }
 
+
 - (void)setUpFrameRenderBuffer {
     glGenRenderbuffers(1,&_renderbuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, _renderbuffer);
@@ -78,12 +104,32 @@
                               GL_RENDERBUFFER, _renderbuffer);  //render 装配到 GL_COLOR_ATTACHMENT0 上
 }
 
+
 - (void)unbindRenderAndFrameBuffer {
     
     glDeleteFramebuffers(1, &_framebuffer);
     _framebuffer = 0;
     glDeleteRenderbuffers(1, &_renderbuffer);
     _renderbuffer = 0;
+    
+//    glDeleteBuffers
+    
+}
+
+
+//VBO
+- (void)setUpVertexBuffer {
+
+    glGenBuffers(1, &_vboID);
+    glBindBuffer(GL_ARRAY_BUFFER, _vboID);
+//    copy the data into the buffer object
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    
+    GLuint indexBuffer;
+    glGenBuffers(1, &indexBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices), Indices, GL_STATIC_DRAW);
+    
 }
 
 
@@ -93,7 +139,11 @@
 //    [self justClearScreenToRender];
     
 //绘制图形
-    [self renderSomeRect];
+//    [self renderSomeRect];
+    
+//VBO+IBO
+    [self renderWithVBO];
+    
 }
 
 
@@ -103,6 +153,11 @@
     _program = [GLProgramUtil createProgramVerFile:vertFile fraFile:fragFile];
     
     glUseProgram(_program);
+    
+//获取shader可编程位置
+    _positionSlot = glGetAttribLocation(_program, "position");
+    _colorSlot    = glGetAttribLocation(_program, "color");
+    
 }
 
 
@@ -123,9 +178,9 @@
         -0.5f,  -0.5f, 0.0f,
     };
     
-    GLint posSlot = glGetAttribLocation(_program, "position");
-    glVertexAttribPointer(posSlot, 3, GL_FLOAT, GL_FALSE, 0, vertices);
-    glEnableVertexAttribArray(posSlot);
+//    GLint posSlot = glGetAttribLocation(_program, "position");
+    glVertexAttribPointer(_positionSlot, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+    glEnableVertexAttribArray(_positionSlot);
     
     static GLfloat colors[] = {
         1.0f, 0.0f, 0.0f,
@@ -133,9 +188,8 @@
         0.0f, 0.0f, 1.0f,
         1.0f, 1.0f, 0.0f
     };
-    GLint colorSlot = glGetAttribLocation(_program, "color");
-    glVertexAttribPointer(colorSlot, 3, GL_FLOAT, GL_FALSE, 0, colors);
-    glEnableVertexAttribArray(colorSlot);
+    glVertexAttribPointer(_colorSlot, 3, GL_FLOAT, GL_FALSE, 0, colors);
+    glEnableVertexAttribArray(_colorSlot);
     
 }
 
@@ -171,6 +225,28 @@
     [_context presentRenderbuffer:GL_RENDERBUFFER];
 
 }
+
+
+- (void)renderWithVBO {
+    glClearColor(0.0, 1.0, 1.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glViewport(0, 0, self.frame.size.width, self.frame.size.height);
+    
+    glEnableVertexAttribArray(_positionSlot);
+    glVertexAttribPointer(_positionSlot, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+    
+    glEnableVertexAttribArray(_colorSlot);
+    glVertexAttribPointer(_colorSlot, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL+sizeof(GL_FLOAT)*3);
+
+//    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    glDrawElements(GL_TRIANGLES, sizeof(Indices)/sizeof(Indices[0]),
+                   GL_UNSIGNED_BYTE, 0);
+    
+    [_context  presentRenderbuffer: GL_RENDERBUFFER ];
+    
+}
+
 
 
 
