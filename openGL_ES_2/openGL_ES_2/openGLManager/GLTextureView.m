@@ -27,6 +27,9 @@
     int         _textureVertCount; //6
     GLuint      _vboID;
     
+//FBO
+    GLuint       _framebufferObject;
+    
 }
 
 @end
@@ -42,6 +45,8 @@
     if (self) {
         [self configEnvironment];
         [self setUpGLProgram];
+        
+        _textureID = [self getTextureFromImage:[UIImage imageNamed:@"texture"]];
         
         [self setUpVertexBufferObject];
     
@@ -76,7 +81,9 @@
 }
 
 
+//render into screen
 - (void)setUpFrameRenderBuffer {
+    
     glGenRenderbuffers(1,&_renderbuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, _renderbuffer);
     [_context renderbufferStorage:GL_RENDERBUFFER fromDrawable:_eaglLayer];
@@ -84,8 +91,10 @@
     glGenFramebuffers(1, &_framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
     
+    
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                              GL_RENDERBUFFER, _renderbuffer);  //render 装配到 GL_COLOR_ATTACHMENT0 上
+                              GL_RENDERBUFFER, _renderbuffer);  //render 装配到 GL_COLOR_ATTACHMENT0上
+
 }
 
 - (void)setUpGLProgram {
@@ -94,11 +103,6 @@
     _program = [GLProgramUtil createProgramVerFile:vertFile fraFile:fragFile];
     
     glUseProgram(_program);
-    
-    //获取shader可编程位置
-//    _positionSlot = glGetAttribLocation(_program, "position");
-//    _colorSlot    = glGetAttribLocation(_program, "color");
-    
 }
 
 
@@ -107,7 +111,7 @@
     CGImageRef imageRef = [image CGImage];
     size_t width  = CGImageGetWidth(imageRef);
     size_t height = CGImageGetHeight(imageRef);
-    GLubyte* textureData = (GLubyte *)malloc(width * height * 4);
+    GLubyte *textureData = (GLubyte *)malloc(width * height * 4);
     
     CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
     //    color-space
@@ -136,8 +140,8 @@
     
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)width, (GLsizei)height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData);
     
-    //    绑定在5 ，GL_TEXTURE5
-    glBindTexture(GL_TEXTURE_2D, 5);
+    //绑定在5 ，GL_TEXTURE5
+    glBindTexture(GL_TEXTURE_2D, 0);
     
     CGContextRelease(context);
     CGColorSpaceRelease(colorSpace);
@@ -175,13 +179,13 @@
     glVertexAttribPointer(glGetAttribLocation(_program, "texcoord"), 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat)*5, NULL+sizeof(GL_FLOAT)*3);
 }
 
+
 - (void)activeTexture {
-    _textureID = [self getTextureFromImage:[UIImage imageNamed:@"texture"]];
     
-    glActiveTexture(GL_TEXTURE5);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, _textureID);
     //    glUniform1i(_texture, 5);
-    glUniform1i(glGetUniformLocation(_program, "image"), 5);  //可以通过脚本程序获取 纹理对应location
+    glUniform1i(glGetUniformLocation(_program, "image"), 0);  //可以通过脚本程序获取 纹理对应location
     glDrawArrays(GL_TRIANGLES, 0, _textureVertCount);
 }
 
@@ -208,6 +212,70 @@
 }
 
 
+#pragma mark --FBO
+
+//render into texture
+- (void)setUpoffScreenframeBuffer {
+    
+    glGenFramebuffers(1, &_framebufferObject);
+    glBindFramebuffer(GL_FRAMEBUFFER, _framebufferObject);
+    
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _textureID, 0);
+    
+    glGenRenderbuffers(1,&_renderbuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, _renderbuffer);
+    [_context renderbufferStorage:GL_RENDERBUFFER fromDrawable:_eaglLayer];
+//    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, 512, 512);
+    
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                              GL_RENDERBUFFER, _renderbuffer);
+    //状态检查
+    GLenum state = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (state != GL_FRAMEBUFFER_COMPLETE ) {
+        NSLog(@"This is error\n");
+    }
+    
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    
+}
+
+- (void)renderToFBO {
+    
+    glBindFramebuffer(GL_FRAMEBUFFER, _framebufferObject);
+    
+    glEnable(GL_DEPTH_TEST);
+    glClearDepthf(1.0f);
+    
+    
+    glClearColor(0.0, 1.0, 1.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+    
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, _textureID);
+    
+    glUniform1i(glGetUniformLocation(_program, "image"), 0);  //可以通过脚本程序获取 纹理对应location
+    glDrawArrays(GL_TRIANGLES, 0, _textureVertCount);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    
+    //再重新使用 渲染到fbo的纹理进行绘制
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, _framebufferObject);
+    
+}
+
+
+- (void)destroyFBO {
+    
+    glBindFramebuffer(GL_FRAMEBUFFER, _framebufferObject);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
+    glDeleteTextures(1, &_textureID);
+    
+    glDeleteFramebuffers(1, &_framebufferObject);
+    _framebufferObject = 0;
+
+}
 
 
 
