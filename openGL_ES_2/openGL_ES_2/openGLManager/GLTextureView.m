@@ -27,9 +27,13 @@
     int         _textureVertCount; //6
     GLuint      _vboID;
     
-//
-    GLuint       _depthRenderbuffer;
+    GLsizei    _textureWidth;
+    GLsizei    _textureHeight;
     
+//
+    GLuint       _frameBuffer1;
+    GLuint      _textureID1;
+
 }
 
 @end
@@ -91,11 +95,10 @@
     glBindRenderbuffer(GL_RENDERBUFFER, _colorRenderbuffer);
     [_context renderbufferStorage:GL_RENDERBUFFER fromDrawable:_eaglLayer];
     
-  
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                              GL_RENDERBUFFER, _colorRenderbuffer);  //render 装配到 GL_COLOR_ATTACHMENT0上
+                              GL_RENDERBUFFER, _colorRenderbuffer);
     
-    //状态检查
+//状态检查
     GLenum state = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (state != GL_FRAMEBUFFER_COMPLETE ) {
         NSLog(@"This is error\n");
@@ -145,6 +148,9 @@
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)width, (GLsizei)height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData);
+    
+    _textureHeight = height;
+    _textureWidth  = width;
     
     //绑定在5 ，GL_TEXTURE5
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -220,15 +226,12 @@
 
 #pragma mark --FBO
 
-- (void)config {
-    //    数据存储，render分配内存空间
-    //    GL_MAX_RENDERBUFFER_SIZE
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, 512, 512); //width and height should less than GL_MAX_RENDERBUFFER_SIZE
-
+- (void)configFrameBuffer {
     
-    //将2D纹理图像附加到FBO
+    glGenFramebuffers(1,&_frameBuffer1);
+    glBindFramebuffer(GL_FRAMEBUFFER, _frameBuffer1);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _textureID, 0);
-
+    
     
 }
 
