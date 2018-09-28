@@ -18,7 +18,7 @@
     EAGLContext *_context;
     
     GLuint       _framebuffer;
-    GLuint       _renderbuffer;
+    GLuint       _colorRenderbuffer;
     
     GLuint      _program;  //渲染program句柄
     
@@ -27,8 +27,8 @@
     int         _textureVertCount; //6
     GLuint      _vboID;
     
-//FBO
-    GLuint       _framebufferObject;
+//
+    GLuint       _depthRenderbuffer;
     
 }
 
@@ -83,17 +83,23 @@
 
 //render into screen
 - (void)setUpFrameRenderBuffer {
-    
-    glGenRenderbuffers(1,&_renderbuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, _renderbuffer);
-    [_context renderbufferStorage:GL_RENDERBUFFER fromDrawable:_eaglLayer];
-    
+
     glGenFramebuffers(1, &_framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
     
+    glGenRenderbuffers(1,&_colorRenderbuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, _colorRenderbuffer);
+    [_context renderbufferStorage:GL_RENDERBUFFER fromDrawable:_eaglLayer];
     
+  
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                              GL_RENDERBUFFER, _renderbuffer);  //render 装配到 GL_COLOR_ATTACHMENT0上
+                              GL_RENDERBUFFER, _colorRenderbuffer);  //render 装配到 GL_COLOR_ATTACHMENT0上
+    
+    //状态检查
+    GLenum state = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (state != GL_FRAMEBUFFER_COMPLETE ) {
+        NSLog(@"This is error\n");
+    }
 
 }
 
@@ -189,16 +195,6 @@
     glDrawArrays(GL_TRIANGLES, 0, _textureVertCount);
 }
 
-
-- (void)unbindRenderAndFrameBuffer {
-    
-    glDeleteFramebuffers(1, &_framebuffer);
-    _framebuffer = 0;
-    glDeleteRenderbuffers(1, &_renderbuffer);
-    _renderbuffer = 0;
-    
-}
-
 - (void)render {
     
     glClearColor(0.0, 1.0, 1.0, 1.0);
@@ -212,72 +208,32 @@
 }
 
 
+//解绑删除
+- (void)unbindRenderAndFrameBuffer {
+    
+    glDeleteFramebuffers(1, &_framebuffer);
+    _framebuffer = 0;
+    glDeleteRenderbuffers(1, &_colorRenderbuffer);
+    _colorRenderbuffer = 0;
+}
+
+
 #pragma mark --FBO
 
-//render into texture
-- (void)setUpoffScreenframeBuffer {
+- (void)config {
+    //    数据存储，render分配内存空间
+    //    GL_MAX_RENDERBUFFER_SIZE
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, 512, 512); //width and height should less than GL_MAX_RENDERBUFFER_SIZE
+
     
-    glGenFramebuffers(1, &_framebufferObject);
-    glBindFramebuffer(GL_FRAMEBUFFER, _framebufferObject);
-    
+    //将2D纹理图像附加到FBO
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _textureID, 0);
-    
-    glGenRenderbuffers(1,&_renderbuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, _renderbuffer);
-    [_context renderbufferStorage:GL_RENDERBUFFER fromDrawable:_eaglLayer];
-//    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, 512, 512);
-    
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                              GL_RENDERBUFFER, _renderbuffer);
-    //状态检查
-    GLenum state = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (state != GL_FRAMEBUFFER_COMPLETE ) {
-        NSLog(@"This is error\n");
-    }
-    
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
     
 }
-
-- (void)renderToFBO {
-    
-    glBindFramebuffer(GL_FRAMEBUFFER, _framebufferObject);
-    
-    glEnable(GL_DEPTH_TEST);
-    glClearDepthf(1.0f);
-    
-    
-    glClearColor(0.0, 1.0, 1.0, 1.0);
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
-    
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, _textureID);
-    
-    glUniform1i(glGetUniformLocation(_program, "image"), 0);  //可以通过脚本程序获取 纹理对应location
-    glDrawArrays(GL_TRIANGLES, 0, _textureVertCount);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    
-    //再重新使用 渲染到fbo的纹理进行绘制
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, _framebufferObject);
-    
-}
-
-
-- (void)destroyFBO {
-    
-    glBindFramebuffer(GL_FRAMEBUFFER, _framebufferObject);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
-    glDeleteTextures(1, &_textureID);
-    
-    glDeleteFramebuffers(1, &_framebufferObject);
-    _framebufferObject = 0;
-
-}
-
-
 
 
 @end
+
+
+
